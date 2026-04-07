@@ -1,0 +1,31 @@
+# 1. 环境与依赖隔离
+venv/
+env/
+.venv/
+
+# 2. 敏感信息
+.env
+.streamlit/secrets.toml
+
+# 3. 核心数据库与模型数据
+vector_db/
+chroma_db/
+faiss_index/
+*.sqlite3
+*.db
+data/
+
+# 4. Python 临时缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# 5. IDE 及其它系统生成文件
+.vscode/
+.idea/
+.DS_Store
+.work/
+.gemini/
+.pytest_cache/
