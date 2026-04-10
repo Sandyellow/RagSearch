@@ -1,92 +1,78 @@
-import os
-import uuid
 import streamlit as st
-from dotenv import load_dotenv
-from core.rag_backend import RAGBackend
+import time
+from core.interfaces import LLMConfig, EmbedConfig
+from core.rag_backend import LangChainRAGBackend
 
-load_dotenv()
+st.set_page_config(page_title="RAG Backend Test", layout="wide")
 
-st.set_page_config(page_title="RagSearch", layout="wide")
-st.title("Streamlit RAG Search")
+st.title("🧩 RAG Backend Integration Test")
+st.markdown("配置并验证不同组件的连通性。")
 
-# 实例化依赖并配置全局缓存
-@st.cache_resource
-def get_shared_backend() -> RAGBackend:
-    """获取 RAG 后端全局单例服务实例。"""
-    return RAGBackend()
+if 'backend' not in st.session_state:
+    st.session_state.backend = LangChainRAGBackend()
 
-backend = get_shared_backend()
+col1, col2 = st.columns(2)
 
-# 会话状态变量构建
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+with col1:
+    st.subheader("LLM 配置")
+    st.info("仅支持 **OpenAI 兼容协议**（官方 OpenAI、硅基流动、DeepSeek、智谱、阿里云百炼等国产代理均适用）")
+    llm_base_url = st.text_input("Base URL（留空使用 OpenAI 官方地址）", key="llm_base_url")
+    llm_api_key = st.text_input("API Key", type="password", key="llm_api_key")
+    llm_model_name = st.text_input("Model Name", value="gpt-3.5-turbo", key="llm_model")
 
-if "session_id" not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
-
-
-# 控件区划分：侧边栏及管理入口
-with st.sidebar:
-    st.header("1. 上传检索文档")
-    uploaded_file = st.file_uploader("支持文档集", type=["pdf", "docx"])
-    
-    if uploaded_file is not None:
-        if st.button("提交知识文档构建"):
-            with st.spinner("系统处理中..."):
-                response = backend.upload_file(
-                    file_bytes=uploaded_file.getvalue(), 
-                    file_name=uploaded_file.name,
-                    session_id=st.session_state.session_id
-                )
-                
-                if response.get("success", False):
-                    st.success(response.get("message", "文档处理完成。"))
-                else:
-                    st.error(response.get("message", "文档处理失败。"))
-    
-    st.divider()
-    
-    if st.button("清空独立状态上下文"):
-        response = backend.clear_context(session_id=st.session_state.session_id)
-        if response.get("success", False):
-            st.session_state.chat_history = []
-            st.success("指定上下文存储已注销回收清理。")
-        else:
-            st.error(response.get("message", "清空任务触发异常阻断。"))
-
-# 控件区划分：主要消息响应对答视窗
-st.header("2. 探索交互窗口")
-
-for msg in st.session_state.chat_history:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-user_input = st.chat_input("发入指令或查询请求...")
-if user_input:
-    st.session_state.chat_history.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-    
-    with st.chat_message("assistant"):
-        with st.spinner("队列请求推断中..."):
-            response = backend.ask_question(
-                question=user_input, 
-                chat_history=st.session_state.chat_history,
-                session_id=st.session_state.session_id
-            )
-            
-            if response.get("success", False):
-                data = response.get("data", {})
-                answer_text = data.get("answer", "文本实体结构回拉获取失效。")
-                
-                st.markdown(answer_text)
-                
-                sources = data.get("sources", [])
-                if sources:
-                    with st.expander("辅助说明与文档碎片关联参考", expanded=False):
-                        for idx, source_txt in enumerate(sources):
-                            st.caption(f"[{idx+1}] {source_txt}")
-                            
-                st.session_state.chat_history.append({"role": "assistant", "content": answer_text})
+    if st.button("测试 LLM 连通性"):
+        config = LLMConfig(
+            base_url=llm_base_url if llm_base_url else None,
+            api_key=llm_api_key,
+            model_name=llm_model_name
+        )
+        with st.spinner("Ping..."):
+            if st.session_state.backend.ping_llm(config):
+                st.success("✅ LLM 测试成功！")
             else:
-                st.error(response.get("message", "业务组件响应获取未知系统故障拦截器。"))
+                st.error("❌ LLM 测试失败，请检查配置。")
+
+with col2:
+    st.subheader("Embedding 配置")
+    st.info("仅支持 **OpenAI 兼容协议**（官方 OpenAI、智谱、阿里云百炼等国产代理均适用）")
+    emb_base_url = st.text_input("Base URL（留空使用 OpenAI 官方地址）", key="emb_base_url")
+    emb_api_key = st.text_input("API Key", type="password", key="emb_api_key")
+    emb_model_name = st.text_input("Model Name", value="text-embedding-ada-002", key="emb_model")
+
+    if st.button("测试 Embedding 连通性"):
+        config = EmbedConfig(
+            base_url=emb_base_url if emb_base_url else None,
+            api_key=emb_api_key,
+            model_name=emb_model_name
+        )
+        with st.spinner("Ping..."):
+            if st.session_state.backend.ping_embedding(config):
+                st.success("✅ Embedding 测试成功！")
+            else:
+                st.error("❌ Embedding 测试失败，请检查配置。")
+
+st.divider()
+st.subheader("初始化验证")
+if st.button("一键初始化 Backend", type="primary", use_container_width=True):
+    llm_config = LLMConfig(
+        base_url=llm_base_url if llm_base_url else None,
+        api_key=llm_api_key,
+        model_name=llm_model_name
+    )
+    emb_config = EmbedConfig(
+        base_url=emb_base_url if emb_base_url else None,
+        api_key=emb_api_key,
+        model_name=emb_model_name
+    )
+    
+    with st.spinner("正在全局初始化..."):
+        if st.session_state.backend.initialize(llm_config, emb_config):
+            st.success("🎉 Backend 初始化成功！各个组件已就绪，内存型 FAISS 已准备。")
+        else:
+            st.error("❌ Backend 初始化失败。")
+
+st.divider()
+st.subheader("内存数据库管理")
+if st.button("🗑️ 清空当前用户的知识库内存"):
+    st.session_state.backend.clear_index()
+    st.success("已成功释放内存，清空临时索引。")

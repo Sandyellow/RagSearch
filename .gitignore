@@ -1,13 +1,16 @@
-# 1. 环境与依赖隔离
+# 1. Virtual Environments
 venv/
 env/
 .venv/
+venv312/
+.venv312/
 
-# 2. 敏感信息
+# 2. Secrets & Environment Variables
 .env
+.env.local
 .streamlit/secrets.toml
 
-# 3. 核心数据库与模型数据
+# 3. Vector Databases & Data
 vector_db/
 chroma_db/
 faiss_index/
@@ -15,17 +18,35 @@ faiss_index/
 *.db
 data/
 
-# 4. Python 临时缓存
+# 4. Python Build & Distribution Artifacts
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.log
+*.egg-info/
+dist/
+build/
+*.egg
 
-# 5. IDE 及其它系统生成文件
+# 5. Streamlit Cache
+.streamlit/cache/
+
+# 6. IDE & System Files
 .vscode/
 .idea/
 .DS_Store
 .work/
 .gemini/
 .pytest_cache/
+.codebuddy/
+.agents/
+
+# 7. OS Files
+Thumbs.db
+Desktop.ini
+
+# 8. Logs & Temp
+*.log
+tmp/
+temp/
+*.tmp
