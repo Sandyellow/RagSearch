@@ -903,14 +903,14 @@ def render_chat_interface():
             with col1:
                 st.markdown('<div style="width:36px;height:36px;background:#10A37F;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:bold;">U</div>', unsafe_allow_html=True)
             with col2:
-                st.markdown(f'<div style="background-color:#10A37F;color:white;padding:12px 16px;border-radius:0 12px 12px 12px;text-align:left;max-width:100%;">{msg["content"]}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="background-color:#10A37F;color:white;padding:12px 16px;border-radius:0 12px 12px 12px;text-align:left;max-width:100%;margin-bottom:8px;">{msg["content"]}</div>', unsafe_allow_html=True)
         else:
             # AI 消息：头像在左，气泡在右
             col1, col2 = st.columns([0.03, 0.9])
             with col1:
                 st.markdown('<div style="width:36px;height:36px;background:#343541;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:bold;">A</div>', unsafe_allow_html=True)
             with col2:
-                st.markdown(f'<div style="background-color:#343541;color:#ECECEC;padding:12px 16px;border-radius:0 12px 12px 12px;text-align:left;max-width:100%;">{msg["content"]}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="background-color:#343541;color:#ECECEC;padding:12px 16px;border-radius:0 12px 12px 12px;text-align:left;max-width:100%;margin-bottom:8px;">{msg["content"]}</div>', unsafe_allow_html=True)
     
     # 问答输入框
     placeholder = "输入您的问题..." if st.session_state.doc_ready else "请先上传文档后提问"
@@ -928,7 +928,7 @@ def render_chat_interface():
         with col1:
             st.markdown('<div style="width:36px;height:36px;background:#10A37F;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:bold;">U</div>', unsafe_allow_html=True)
         with col2:
-            st.markdown(f'<div style="background-color:#10A37F;color:white;padding:12px 16px;border-radius:0 12px 12px 12px;text-align:left;max-width:100%;">{prompt}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="background-color:#10A37F;color:white;padding:12px 16px;border-radius:0 12px 12px 12px;text-align:left;max-width:100%;margin-bottom:8px;">{prompt}</div>', unsafe_allow_html=True)
         
         # 生成 AI 回复 - 左侧
         col1, col2 = st.columns([0.03, 0.9])
@@ -937,7 +937,7 @@ def render_chat_interface():
         with col2:
             with st.spinner("思考中..."):
                 answer = handle_question(prompt)
-                st.markdown(f'<div style="background-color:#343541;color:#ECECEC;padding:12px 16px;border-radius:0 12px 12px 12px;text-align:left;max-width:100%;">{answer}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="background-color:#343541;color:#ECECEC;padding:12px 16px;border-radius:0 12px 12px 12px;text-align:left;max-width:100%;margin-bottom:8px;">{answer}</div>', unsafe_allow_html=True)
                 
                 st.session_state.messages.append({
                     "role": "assistant",
