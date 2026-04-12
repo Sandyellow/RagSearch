@@ -9,6 +9,7 @@ RAG 智能文档问答系统 - Web 全栈前端
 import streamlit as st
 import time
 import os
+import sys
 import tempfile
 from datetime import datetime
 import requests
@@ -17,6 +18,12 @@ from typing import List, Dict, Any, Optional
 # ========================================================================
 # 🔌 A 同学接口导入
 # ========================================================================
+# 添加父目录到搜索路径（兼容远程部署）
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_parent_dir = os.path.dirname(_current_dir)
+if _parent_dir not in sys.path:
+    sys.path.insert(0, _parent_dir)
+
 try:
     from core.interfaces import IRAGBackend, LLMConfig, EmbedConfig, Citation
     from core.rag_backend import LangChainRAGBackend
