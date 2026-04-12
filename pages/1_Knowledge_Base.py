@@ -1,13 +1,15 @@
 """
 知识库管理页面 - 上传文档并构建向量知识库
 """
+
 import streamlit as st
 import tempfile
 import os
 
 st.set_page_config(page_title="知识库管理 | RAG Search", page_icon="·", layout="wide")
 
-st.markdown("""
+st.markdown(
+    """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
@@ -33,13 +35,21 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 .stat-label { font-size: 0.75rem; color: #718096; font-weight: 500; margin-bottom: 0.2rem; }
 .stat-value { font-size: 1.4rem; font-weight: 600; color: #2d3748; }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 st.markdown('<div class="page-title">知识库管理</div>', unsafe_allow_html=True)
-st.markdown('<div class="page-subtitle">上传文档、构建向量索引</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="page-subtitle">上传文档、构建向量索引</div>', unsafe_allow_html=True
+)
 
 backend = st.session_state.get("backend")
-if backend is None or not getattr(backend, "llm", None) or not getattr(backend, "embeddings", None):
+if (
+    backend is None
+    or not getattr(backend, "llm", None)
+    or not getattr(backend, "embeddings", None)
+):
     st.warning("RAG 后端尚未初始化，请先前往首页完成配置。")
     st.stop()
 
@@ -48,11 +58,20 @@ chunk_count = getattr(backend, "_chunk_count", 0)
 has_index = backend.vector_store is not None
 c1, c2, c3 = st.columns(3)
 with c1:
-    st.markdown(f'<div class="stat-card"><div class="stat-label">已入库 Chunks</div><div class="stat-value">{chunk_count}</div></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="stat-card"><div class="stat-label">已入库 Chunks</div><div class="stat-value">{chunk_count}</div></div>',
+        unsafe_allow_html=True,
+    )
 with c2:
-    st.markdown(f'<div class="stat-card"><div class="stat-label">索引状态</div><div class="stat-value">{"就绪" if has_index else "空库"}</div></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="stat-card"><div class="stat-label">索引状态</div><div class="stat-value">{"就绪" if has_index else "空库"}</div></div>',
+        unsafe_allow_html=True,
+    )
 with c3:
-    st.markdown(f'<div class="stat-card"><div class="stat-label">容量上限</div><div class="stat-value">2000</div></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="stat-card"><div class="stat-label">容量上限</div><div class="stat-value">2000</div></div>',
+        unsafe_allow_html=True,
+    )
 
 st.divider()
 
@@ -62,23 +81,32 @@ tab_upload, tab_manage = st.tabs(["上传文档", "文件管理"])
 with tab_upload:
     st.markdown("**上传文档**")
     uploaded_files = st.file_uploader(
-        "支持 PDF 和 TXT 格式，可多选",
-        type=["pdf", "txt"],
+        "支持 PDF、TXT、Markdown、DOCX 格式，可多选",
+        type=["pdf", "txt", "md", "docx"],
         accept_multiple_files=True,
-        label_visibility="collapsed"
+        label_visibility="collapsed",
     )
 
     if uploaded_files:
-        st.caption(f"已选择 {len(uploaded_files)} 个文件：{', '.join(f.name for f in uploaded_files)}")
+        st.caption(
+            f"已选择 {len(uploaded_files)} 个文件：{', '.join(f.name for f in uploaded_files)}"
+        )
 
-    if st.button("开始入库", type="primary", use_container_width=True, disabled=not uploaded_files):
+    if st.button(
+        "开始入库",
+        type="primary",
+        use_container_width=True,
+        disabled=not uploaded_files,
+    ):
         tmp_paths = []
         source_names = {}
         try:
             with st.spinner("正在处理文档..."):
                 for uf in uploaded_files:
                     suffix = os.path.splitext(uf.name)[1]
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                    with tempfile.NamedTemporaryFile(
+                        delete=False, suffix=suffix
+                    ) as tmp:
                         tmp.write(uf.read())
                         tmp_paths.append(tmp.name)
                         source_names[tmp.name] = uf.name
@@ -130,22 +158,28 @@ with tab_manage:
                     page_preview = ", ".join(str(p) for p in item["pages"])
                 else:
                     page_preview = f"{item['pages'][0]} ... {item['pages'][-1]}"
-            display_rows.append({
-                "文件名": item["file_name"],
-                "Chunks": item["chunk_count"],
-                "页数": item["page_count"],
-                "页码预览": page_preview,
-            })
+            display_rows.append(
+                {
+                    "文件名": item["file_name"],
+                    "Chunks": item["chunk_count"],
+                    "页数": item["page_count"],
+                    "页码预览": page_preview,
+                }
+            )
         st.dataframe(display_rows, use_container_width=True, hide_index=True)
 
         source_options = []
         for idx, item in enumerate(files, start=1):
             label = f"{idx}. {item['file_name']} ({item['chunk_count']} chunks)"
             source_options.append((label, item["source"]))
-        selected_label = st.selectbox("选择要删除的文件", [x[0] for x in source_options])
+        selected_label = st.selectbox(
+            "选择要删除的文件", [x[0] for x in source_options]
+        )
 
         if st.button("删除选中文件", type="secondary", use_container_width=True):
-            target_source = next((x[1] for x in source_options if x[0] == selected_label), None)
+            target_source = next(
+                (x[1] for x in source_options if x[0] == selected_label), None
+            )
             if target_source is None:
                 st.warning("未找到目标文件，请刷新后重试。")
                 st.stop()
