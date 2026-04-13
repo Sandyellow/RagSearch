@@ -67,8 +67,8 @@ html, body, [class*="css"] {
     line-height: 1.7;
     white-space: pre-wrap;
     word-break: break-word;
-    background: var(--streamlit-background-color, #ffffff);
-    border: 1px solid var(--streamlit-border-color, #e2e8f0);
+    background: var(--streamlit-secondary-background-color, inherit);
+    border: 1px solid var(--streamlit-border-color, inherit);
     color: inherit;
 }
 
@@ -101,7 +101,7 @@ html, body, [class*="css"] {
     border-radius: 4px;
     font-size: 0.72rem;
     font-weight: 500;
-    background: var(--streamlit-secondary-background-color, #edf2f7);
+    background: rgba(128, 128, 128, 0.2);
     color: inherit;
 }
 
@@ -148,6 +148,16 @@ html, body, [class*="css"] {
 .sb-status { font-size: 0.83rem; line-height: 1.9; color: inherit; }
 .sb-dot-on  { color: #48bb78; }
 .sb-dot-off { color: #fc8181; }
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+    section[data-testid="stSidebar"] {
+        width: 100% !important;
+    }
+    [data-testid="stHorizontalBlock"] {
+        flex-wrap: nowrap !important;
+    }
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -328,48 +338,50 @@ with st.sidebar:
         st.session_state.cancel_requested = False
         st.rerun()
     
-    # 对话列表
+    # 对话列表 - 使用selectbox模式适配手机端
     conversations_list = list(st.session_state.conversations.values())
     conversations_list.sort(key=lambda x: x["created_at"], reverse=True)
     
-    # 显示对话列表
+    # 构建选项列表
+    conv_options = []
     for conv in conversations_list:
         conv_id = conv["id"]
         is_current = conv_id == current_conv_id
         msg_count = len(conv["messages"])
         preview = conv["messages"][0]["content"][:15] + "..." if msg_count > 0 else "新对话"
-        
-        # 使用3:1比例，适配手机端
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            if st.button(
-                f"{'● ' if is_current else ''}{preview}",
-                key=f"conv_{conv_id}",
-                use_container_width=True,
-            ):
-                st.session_state.current_conversation_id = conv_id
-                st.session_state.input_disabled = False
-                st.session_state.cancel_requested = False
-                st.rerun()
-        with col2:
-            if st.button("删除", key=f"del_{conv_id}", help="删除对话", use_container_width=True):
-                del st.session_state.conversations[conv_id]
-                if st.session_state.current_conversation_id == conv_id:
-                    remaining = list(st.session_state.conversations.keys())
-                    if remaining:
-                        # 切换到第一个剩余对话
-                        st.session_state.current_conversation_id = remaining[0]
-                    else:
-                        # 没有剩余对话，创建一个新的
-                        new_conv_id = _generate_conversation_id()
-                        st.session_state.conversations[new_conv_id] = {
-                            "id": new_conv_id,
-                            "title": "新对话",
-                            "messages": [],
-                            "created_at": time.time()
-                        }
-                        st.session_state.current_conversation_id = new_conv_id
-                st.rerun()
+        indicator = "● " if is_current else ""
+        conv_options.append((f"{indicator}{preview}", conv_id))
+    
+    # 当前选中的索引
+    current_idx = next((i for i, (_, cid) in enumerate(conv_options) if cid == current_conv_id), 0)
+    
+    # 选择对话
+    selected_label = st.selectbox(
+        "选择对话",
+        options=[opt[0] for opt in conv_options],
+        index=current_idx,
+        label_visibility="collapsed"
+    )
+    selected_conv_id = next((cid for label, cid in conv_options if label == selected_label), current_conv_id)
+    
+    # 如果选择了不同的对话
+    if selected_conv_id != current_conv_id:
+        st.session_state.current_conversation_id = selected_conv_id
+        st.session_state.input_disabled = False
+        st.session_state.cancel_requested = False
+        st.rerun()
+    
+    # 删除当前对话按钮
+    if st.button("删除当前对话", type="secondary", use_container_width=True):
+        if len(st.session_state.conversations) > 1:
+            del st.session_state.conversations[current_conv_id]
+            remaining = list(st.session_state.conversations.keys())
+            st.session_state.current_conversation_id = remaining[0]
+        else:
+            # 只有一个对话，清空它
+            st.session_state.conversations[current_conv_id]["messages"] = []
+            st.session_state.conversations[current_conv_id]["title"] = "新对话"
+        st.rerun()
     
     # 当前对话信息
     rounds = len(chat_messages) // 2
