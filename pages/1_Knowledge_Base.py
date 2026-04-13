@@ -50,7 +50,9 @@ if (
     or not getattr(backend, "llm", None)
     or not getattr(backend, "embeddings", None)
 ):
-    st.warning("RAG 后端尚未初始化，请先前往首页完成配置。")
+    st.warning("服务尚未初始化")
+    st.caption("请先前往 **Settings** 页面配置 LLM 与 Embedding 服务，并点击「初始化后端」。")
+    st.page_link("pages/0_Settings.py", label="前往 Settings", icon=":material/settings:", use_container_width=True)
     st.stop()
 
 # 状态指标

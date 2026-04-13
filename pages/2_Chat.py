@@ -84,128 +84,53 @@ html, body, [class*="css"] {
 }
 .role-label-user { text-align: right; }
 
-/* 引文区域 */
+/* 引文区域 - 紧凑折叠 */
 .citations-wrap {
     max-width: 80%;
-    margin-bottom: 1.2rem;
+    margin-bottom: 0.8rem;
 }
-.citations-header {
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #a0aec0;
-    margin: 0.5rem 0 0.45rem;
+.citation-summary {
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    flex-wrap: wrap;
+    font-size: 0.75rem;
 }
-.citations-header::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: #e2e8f0;
+.citation-tag {
+    background: #edf2f7;
+    color: #4a5568;
+    padding: 0.12rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 500;
 }
 
 /* 单条引文卡片 */
 .citation-card {
-    background: #fffbf0;
-    border: 1px solid #fde68a;
-    border-left: 3px solid #d97706;
-    border-radius: 0 6px 6px 0;
-    padding: 0.6rem 0.85rem;
-    margin-bottom: 0.45rem;
-    font-size: 0.82rem;
-}
-.citation-meta {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-bottom: 0.4rem;
-}
-.citation-num {
-    background: #d97706;
-    color: white;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.65rem;
-    font-weight: 700;
-    flex-shrink: 0;
-}
-.tag {
-    border-radius: 4px;
-    padding: 0.1rem 0.45rem;
-    font-size: 0.72rem;
-    font-weight: 500;
-}
-.tag-source { background: #edf2f7; color: #4a5568; font-family: monospace; }
-.tag-page   { background: #ebf8ff; color: #2b6cb0; }
-.tag-score  {
-    margin-left: auto;
-    font-size: 0.7rem;
-    color: #a0aec0;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-.score-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    display: inline-block;
-    flex-shrink: 0;
-}
-.score-bar {
-    width: 76px;
-    height: 6px;
-    border-radius: 999px;
-    background: #edf2f7;
-    overflow: hidden;
-    display: inline-block;
-}
-.score-bar-fill {
-    height: 100%;
-    border-radius: 999px;
+    background: #fafaf9;
+    border: 1px solid #e5e7eb;
+    border-left: 2px solid #d97706;
+    border-radius: 4px 6px 6px 4px;
+    padding: 0.5rem 0.7rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.78rem;
 }
 .citation-details {
-    margin-top: 0.2rem;
+    margin-top: 0.15rem;
 }
 .citation-details summary {
     list-style: none;
     cursor: pointer;
     color: #975a16;
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-bottom: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 500;
 }
 .citation-details summary::-webkit-details-marker { display: none; }
 .citation-preview {
     color: #4a5568;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-word;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin-bottom: 0.2rem;
+    line-height: 1.5;
+    font-size: 0.78rem;
 }
-.citation-text {
-    color: #4a5568;
-    line-height: 1.6;
-    max-height: 180px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #d97706 transparent;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-.citation-text::-webkit-scrollbar { width: 3px; }
-.citation-text::-webkit-scrollbar-thumb { background: #d97706; border-radius: 2px; }
 
 /* 空状态 */
 .empty-state {
@@ -237,44 +162,45 @@ def _score_info(score: float):
         return "#fc8181", "弱相关"
 
 
-def _clean_text(text: str, max_len: int = 220) -> str:
+def _clean_text(text: str, max_len: int = 500) -> str:
     cleaned = " ".join((text or "").split())
     if len(cleaned) > max_len:
         return cleaned[:max_len].rstrip() + "..."
     return cleaned
 
 
-def _score_percent(score: Optional[float]) -> int:
-    if score is None:
-        return 0
-    return max(0, min(100, int((1 - min(score, 1.0)) * 100)))
-
-
 def render_citations(citations: list):
     if not citations:
         return
     sorted_citations = sorted(citations, key=lambda x: x.score if x.score is not None else float("inf"))
-    st.caption(f"参考来源 {len(sorted_citations)} 条")
 
-    for index, c in enumerate(sorted_citations, start=1):
-        color, label = _score_info(c.score) if c.score is not None else ("#a0aec0", "未知")
-        score_value = f"{c.score:.3f}" if c.score is not None else "-"
-        page_text = f"第 {c.page} 页" if c.page else "页码未知"
-        score_percent = _score_percent(c.score)
+    # 紧凑的来源摘要行
+    source_tags = " ".join(
+        f'<span class="citation-tag">{c.source}</span>'
+        for c in sorted_citations
+    )
+    st.markdown(f"""
+    <div class="citation-summary">
+        <span style="color:#9ca3af;font-size:0.72rem">参考来源 {len(sorted_citations)} 条</span>
+        {source_tags}
+    </div>""", unsafe_allow_html=True)
 
-        with st.container(border=True):
-            left, right = st.columns([7, 3])
-            with left:
-                st.markdown(f"**{index}. {c.source}**")
+    # 折叠详情面板
+    with st.expander("查看引文详情", expanded=False):
+        for index, c in enumerate(sorted_citations, start=1):
+            color, label = _score_info(c.score) if c.score is not None else ("#a0aec0", "未知")
+            page_text = f"第 {c.page} 页" if c.page else "页码未知"
+
+            with st.container(border=True):
+                col_left, col_right = st.columns([8, 2])
+                with col_left:
+                    st.markdown(f"**{index}. {c.source}**")
+                with col_right:
+                    st.markdown(f'<span style="font-size:0.72rem;color:{color}">{label}</span>', unsafe_allow_html=True)
                 st.caption(page_text)
-            with right:
-                st.markdown(f"**{label}** ({score_value})")
-                st.progress(score_percent)
 
-            st.write(_clean_text(c.content))
-
-            with st.expander("展开全文"):
-                st.write(c.content)
+            with st.expander(f"内容预览"):
+                st.markdown(_clean_text(c.content, 500), unsafe_allow_html=False)
 
 
 def render_message(msg: dict):
@@ -364,9 +290,13 @@ else:
 
 # 提示信息
 if not is_ready:
-    st.info("请先前往首页完成 RAG 后端初始化配置。")
+    st.warning("服务尚未初始化")
+    st.caption("请先前往 **Settings** 页面配置 LLM 与 Embedding 服务，并点击「初始化后端」。")
+    st.page_link("pages/0_Settings.py", label="前往 Settings", icon=":material/settings:", use_container_width=True)
 elif not has_index:
-    st.info("请先前往「Knowledge Base」页面上传文档，再进行问答。")
+    st.warning("知识库为空")
+    st.caption("请先前往 **Knowledge Base** 上传文档，构建向量索引后再进行问答。")
+    st.page_link("pages/1_Knowledge_Base.py", label="前往 Knowledge Base", icon=":material/folder:", use_container_width=True)
 else:
     user_input = st.chat_input("输入问题...", key="chat_input")
 
