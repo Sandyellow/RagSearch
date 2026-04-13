@@ -17,23 +17,24 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 .page-title {
     font-size: 1.4rem;
     font-weight: 600;
-    color: #1a202c;
     margin-bottom: 0.2rem;
+    color: inherit;
 }
 .page-subtitle {
     font-size: 0.88rem;
-    color: #718096;
     margin-bottom: 1.5rem;
+    color: inherit;
+    opacity: 0.7;
 }
 .stat-card {
-    background: #f7fafc;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--streamlit-border-color, #e2e8f0);
     border-radius: 8px;
     padding: 0.9rem 1.1rem;
     text-align: center;
+    background: var(--streamlit-secondary-background-color, #f7fafc);
 }
-.stat-label { font-size: 0.75rem; color: #718096; font-weight: 500; margin-bottom: 0.2rem; }
-.stat-value { font-size: 1.4rem; font-weight: 600; color: #2d3748; }
+.stat-label { font-size: 0.75rem; font-weight: 500; margin-bottom: 0.2rem; color: inherit; opacity: 0.6; }
+.stat-value { font-size: 1.4rem; font-weight: 600; color: inherit; }
 </style>
 """,
     unsafe_allow_html=True,
@@ -82,11 +83,15 @@ tab_upload, tab_manage = st.tabs(["上传文档", "文件管理"])
 
 with tab_upload:
     st.markdown("**上传文档**")
+    # 使用动态 key 来重置上传组件
+    if "uploader_key" not in st.session_state:
+        st.session_state.uploader_key = 0
     uploaded_files = st.file_uploader(
         "支持 PDF、TXT、Markdown、DOCX 格式，可多选",
         type=["pdf", "txt", "md", "docx"],
         accept_multiple_files=True,
         label_visibility="collapsed",
+        key=f"file_uploader_{st.session_state.uploader_key}",
     )
 
     if uploaded_files:
@@ -127,6 +132,9 @@ with tab_upload:
                     f"本次处理：{chunks} chunks，"
                     f"总耗时 {total_s:.2f}s（加载 {load_s:.2f}s / 切分 {split_s:.2f}s / 向量索引 {index_s:.2f}s）"
                 )
+                # 重置上传组件，防止重复提交
+                st.session_state.uploader_key += 1
+                st.rerun()
         except RuntimeError as e:
             st.error(f"入库失败：{e}")
         except Exception as e:
