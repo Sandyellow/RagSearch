@@ -446,30 +446,40 @@ class LangChainRAGBackend(IRAGBackend):
                 continue
 
             vector_score = vector_scores.get(doc_id, vector_max)
-            norm_vector = 1 - (vector_score - vector_min) / (
+            norm_vector = (vector_score - vector_min) / (
                 vector_max - vector_min + 1e-8
             )
 
             bm25_score = bm25_scores.get(doc_id, 0)
-            norm_bm25 = bm25_score / (bm25_max + 1e-8)
+            norm_bm25 = 1 - bm25_score / (bm25_max + 1e-8)
 
             final_score = alpha * norm_vector + (1 - alpha) * norm_bm25
 
             results.append((doc, final_score, doc_id))
 
-        results.sort(key=lambda x: x[1], reverse=True)
+        results.sort(key=lambda x: x[1], reverse=False)
         return [(doc, score) for doc, score, _ in results[:top_k]]
 
     def _generate_hypothetical_answer(self, query: str) -> str:
-        """HyDE: 使用 LLM 生成假设性答案，用于增强检索"""
-        prompt = f"""请针对以下问题生成一个假设性的答案。
-要求：
-1. 答案要具体、完整，包含关键细节
-2. 即使信息不完整，也要基于常识给出合理推断
-3. 只输出答案内容，不要添加解释、备注或其他文字
+        """HyDE: 使用 LLM 生成假设性文档，用于增强检索"""
+        prompt = f"""# 指令：生成用于 HyDE 检索的假设性文档
 
-问题：{query}
-回答："""
+## 背景
+你的任务是根据用户问题，生成一个内容详尽、信息准确的假设性回答。这个回答将直接用于向量嵌入，以检索最相关的真实文档。
+
+## 任务
+针对以下"用户问题"，请生成一篇理想的、内容丰富的回答。
+
+## 要求
+- **直接输出：** 你的回答本身就是那篇假设性文档，请勿包含任何开场白、结尾或解释性文字。
+- **内容详实：** 回答应力求全面、准确，仿佛它就是一篇针对该问题的最佳参考资料。
+- **格式中立：** 使用简洁的段落格式，专注于陈述事实和信息。
+
+## 用户问题
+{query}
+
+## 假设性文档
+"""
         try:
             llm = self.llm
             if llm is None:
