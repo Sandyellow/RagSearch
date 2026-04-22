@@ -32,11 +32,12 @@ class LangChainRAGBackend(IRAGBackend):
         self.vector_store = None
         self._bm25_index: Optional[BM25Okapi] = None
         self._bm25_corpus: List[Document] = []
-        self._chunk_count = 0  # 当前已入库的 Chunk 总数
+        self._chunk_count = 0
         self._embed_batch_candidates = (128, 64, 32)
         self._embedding_cache: Dict[str, List[float]] = {}
         self._embedding_cache_limit = 4000
         self._last_ingest_stats: Dict[str, Any] = {}
+        self.relevance_threshold: float = 0.7
 
     @staticmethod
     def _sanitize_retrieved_text(text: str) -> str:
@@ -668,7 +669,11 @@ class LangChainRAGBackend(IRAGBackend):
         if self.llm is None or self.embeddings is None or self.vector_store is None:
             raise RuntimeError("服务未初始化完全。")
 
-        docs_with_scores = self._hybrid_search(query, top_k=10, alpha=0.5)
+        raw_docs = self._hybrid_search(query, top_k=20, alpha=0.5)
+        docs_with_scores = [
+            (doc, score) for doc, score in raw_docs
+            if score <= self.relevance_threshold
+        ][:10]
 
         if not docs_with_scores:
             return {"answer": "根据现有文档无法回答该问题", "citations": []}
