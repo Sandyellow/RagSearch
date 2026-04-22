@@ -575,7 +575,7 @@ class LangChainRAGBackend(IRAGBackend):
         # 进行文本切分
         split_started_at = time.perf_counter()
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1400, chunk_overlap=100
+            chunk_size=500, chunk_overlap=150
         )
         splits = text_splitter.split_documents(all_docs)
         split_cost_ms = int((time.perf_counter() - split_started_at) * 1000)
